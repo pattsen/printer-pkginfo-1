@@ -133,10 +133,10 @@ currentVersion="%s"
 
 function exitWithStatus () {
 	if [ $1 -eq 0 ]; then
-		echo "INSTALL REQUIRED!"
+		echo "INSTALL REQUIRED"
+	else
+		echo "NO INSTALL REQUIRED"
 	fi
-	echo "NO INSTALL REQUIRED"
-	
 	echo "-------------------"
 	echo ""
 	exit $1
@@ -248,6 +248,13 @@ printf "Adding $printername... "
     -o printer-is-shared=false \
     -o printer-error-policy=abort-job \
     -E
+
+
+if [ $? -ne 0 ]; then
+	echo "Failed adding printer... Removing... "
+	/usr/sbin/lpadmin -x "$printername"
+	exitWithStatus 1
+fi
 
 # Get list of configured printers 
 CONFIGUREDPRINTERS=$(lpstat -p | grep -w "printer" | awk '{print$2}' | tr '\n' ' ')
