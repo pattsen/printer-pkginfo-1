@@ -131,27 +131,53 @@ option_2=""
 option_3=""
 currentVersion="%s"
 
+function exitWithStatus () {
+	if [ $1 -eq 0 ]; then
+		echo "INSTALL REQUIRED"
+	else
+		echo "NO INSTALL REQUIRED"
+	fi
+	echo "-------------------"
+	echo ""
+	exit $1
+}
+
+echo "--------------------------------"
+echo "Checking $printername Printer... "
+echo "--------------------------------"
+
+
 ### Determine if receipt is installed ###
+printf "Receipt: "
 if [ -e "/private/etc/cups/deployment/receipts/$printername.plist" ]; then
     storedVersion=$(/usr/libexec/PlistBuddy -c "Print :version" "/private/etc/cups/deployment/receipts/$printername.plist")
-    echo "Stored version: $storedVersion"
+    echo $storedVersion
 else
+	echo "not stored."
     storedVersion="0"
 fi
 
 versionComparison=$(echo "$storedVersion < $currentVersion" | bc -l)
 # This will be 0 if the current receipt is greater than or equal to current version of the script
 
+printf "State: "
+
 ### Printer Install ###
 # If the queue already exists (returns 0), we don't need to reinstall it.
-/usr/bin/lpstat -p "$printername"
+LPSTATOUTPUT=$(/usr/bin/lpstat -p "$printername" 2>&1)
 if [ $? -eq 0 ]; then
     if [ "$versionComparison" -eq 0 ]; then
         # We are at the current or greater version
-        exit 1
+        echo "Configured."
+        exitWithStatus 1
     fi
     # We are of lesser version, and therefore we should delete the printer and reinstall.
-    exit 0
+    echo "Configured, but receipt version $storedVersion doesn't match $currentVersion."
+    exitWithStatus 0
+else
+	# Not configured. For verbosity, say unconfigured and exit with status 0"
+	echo "Unconfigured. $LPSTATOUTPUT"
+	exitWithStatus 0
 fi
 """ % (queue_name, location, display_name, address, ppd, version)
 
@@ -176,10 +202,20 @@ option_3=""
 currentVersion="%s"
 protocol="%s"
 
+function exitWithStatus () {
+	if [ $1 -eq 0 ]; then
+		echo "INSTALL SUCCESSFUL"
+		echo
+		exit 0
+	fi
+	echo "ERROR WITH INSTALL"
+	echo
+	exit 1
+}
+
 ### Determine if receipt is installed ###
 if [ -e "/private/etc/cups/deployment/receipts/$printername.plist" ]; then
     storedVersion=$(/usr/libexec/PlistBuddy -c "Print :version" "/private/etc/cups/deployment/receipts/$printername.plist")
-    echo "Stored version: $storedVersion"
 else
     storedVersion="0"
 fi
@@ -189,17 +225,19 @@ versionComparison=$(echo "$storedVersion < $currentVersion" | bc -l)
 
 ### Printer Install ###
 # If the queue already exists (returns 0), we don't need to reinstall it.
-/usr/bin/lpstat -p "$printername"
+LPSTATOUTPUT=$(/usr/bin/lpstat -p "$printername" 2>&1)
 if [ $? -eq 0 ]; then
     if [ "$versionComparison" -eq 0 ]; then
         # We are at the current or greater version
-        exit 1
+        exitWithStatus 0
     fi
     # We are of lesser version, and therefore we should delete the printer and reinstall.
+    printf "Newer install (${currentVersion})... removing existing printer ($printername)... "
     /usr/sbin/lpadmin -x "$printername"
 fi
 
 # Now we can install the printer.
+printf "Adding $printername... "
 /usr/sbin/lpadmin \
     -p "$printername" \
     -L "$location" \
@@ -210,25 +248,59 @@ fi
     -o printer-is-shared=false \
     -o printer-error-policy=abort-job \
     -E
+
+
+if [ $? -ne 0 ]; then
+	echo "Failed adding printer... Removing... "
+	/usr/sbin/lpadmin -x "$printername"
+	exitWithStatus 1
+fi
+
+# Get list of configured printers 
+CONFIGUREDPRINTERS=$(lpstat -p | grep -w "printer" | awk '{print$2}' | tr '\n' ' ')
+
+# Check if configured.
+if [ $(echo "$CONFIGUREDPRINTERS" | grep -w "$printername" | wc -l | tr -d ' ') -eq 0 ]; then
+	echo "ERROR"
+	echo "$printername not in lpstat list after being configured. Currently configured printers are: $CONFIGUREDPRINTERS"
+	exitWithStatus 1
+fi
+
 # Enable and start the printers on the system (after adding the printer initially it is paused).
-/usr/sbin/cupsenable "$(lpstat -p | grep -w "printer" | awk '{print$2}')"
+printf "Enabling... "
+/usr/sbin/cupsenable $CONFIGUREDPRINTERS
 
 # Create a receipt for the printer
+printf "Creating v${currentVersion} receipt... "
 mkdir -p /private/etc/cups/deployment/receipts
-/usr/libexec/PlistBuddy -c "Add :version string" "/private/etc/cups/deployment/receipts/$printername.plist"
-/usr/libexec/PlistBuddy -c "Set :version $currentVersion" "/private/etc/cups/deployment/receipts/$printername.plist"
+PLISTBUDDYOUTPUT=$(/usr/libexec/PlistBuddy -c "Add :version string" "/private/etc/cups/deployment/receipts/$printername.plist" 2>&1)
+PLISTBUDDYOUTPUT+=$(/usr/libexec/PlistBuddy -c "Set :version $currentVersion" "/private/etc/cups/deployment/receipts/$printername.plist" 2>&1)
+
+# If problem setting version in receipt (above command), we tell user
+if [ $? -ne 0 ]; then
+	echo "ERROR with receipt creation: $PLISTBUDDYOUTPUT"
+fi
 
 # Permission the directories properly.
 chown -R root:_lp /private/etc/cups/deployment
 chmod -R 700 /private/etc/cups/deployment
 
-exit 0
+echo "Complete!"
+echo "Current printers: $CONFIGUREDPRINTERS"
+
+exitWithStatus 0
     """ % (queue_name, location, display_name, address, ppd, version, protocol, formatted_options)
 
     uninstall_content = """#!/bin/sh
 printerName="%s"
+
+printf "Removing $printername... "
 /usr/sbin/lpadmin -x $printerName
+
+printf "Removing receipt... "
 rm -f /private/etc/cups/deployment/receipts/$printerName.plist
+
+echo "Uninstall complete."
     """ % (queue_name)
 
     # write the scripts to temp files
