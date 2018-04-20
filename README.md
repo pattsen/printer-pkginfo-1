@@ -30,7 +30,8 @@ optional arguments:
                         Set Munki catalog (default without -c is "testing")
 
 To import printers into Munki, copy the output file to the pkgsinfo/ directory
-of your Munki repo and then re-run makecatalogs```
+of your Munki repo and then re-run makecatalogs
+```
 
 ### Non-Interactive Usage
 
