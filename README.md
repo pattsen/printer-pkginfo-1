@@ -4,7 +4,35 @@ printer-pkginfo
 Creates a nopkg-style pkginfo file from a plist file to install printers with
 [Munki](https://github.com/munki/munki).
 
-### Usage
+`printer-pkginfo` can be run interactively or using an XML plist file as
+input. In interactive mode, users are guided through filling in the basic
+information for the printer, but more advanced options used by `lpadmin`
+are not available (with the exception of duplexing).
+
+```usage: printer-pkginfo [-h] [-p PLIST] [-i] [-o OUTFILE] [-c CATALOG]
+
+A python script to create nopkg-style files for installing printers onto
+client systems using Munki (https://github.com/munki/munki). Printers can be
+imported from a pre-existing XML plist file or can be created interactively.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -p PLIST, --plist PLIST
+                        Path to an XML plist file containing key/value pairs
+                        for version, display_name, queue_name, ppd, location,
+                        and other options. See example-printer.plist for an
+                        example.
+  -i, --interactive     Create pkginfo file in interactive mode rather than
+                        with a .plist file
+  -o OUTFILE, --outfile OUTFILE
+                        Write pkginfo to plist file rather than STDOUT
+  -c CATALOG, --catalog CATALOG
+                        Set Munki catalog (default without -c is "testing")
+
+To import printers into Munki, copy the output file to the pkgsinfo/ directory
+of your Munki repo and then re-run makecatalogs```
+
+### Non-Interactive Usage
 
 After cloning the repo to your local system (this doesn't have to be the same
 system that you're running Munki on, but if it's not, that adds an extra step),
@@ -18,7 +46,7 @@ Munki server and aren't found on the target system, the install will fail.
 After you've edited the plist file for your printer, run `printer-pkginfo`
 
 ```
-./printer-pkginfo --plist example-printer.plist > example_pkginfo-1.0.plist
+./printer-pkginfo -p example-printer.plist -o example_pkginfo-1.0.plist
 ```
 
 Move the resulting plist file to your `pkgsinfo/` directory on your Munki

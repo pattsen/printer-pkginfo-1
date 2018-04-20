@@ -36,6 +36,13 @@ def fail(errmsg=''):
     # exit
     exit(1)
 
+def yesNo(question):
+    reply = str(raw_input(question+' (y/n): ')).lower().strip()
+    if reply[0] == 'y':
+        return True
+    else:
+        return False
+
 def plistInput(plist):
     plist_opts = {}
 
@@ -58,27 +65,39 @@ def plistInput(plist):
 def interactiveInput():
     plist_opts = {}
     plist_opts['address'] = raw_input('Printer Address: ')
-    plist_opts['protocol'] = raw_input('Protocol (socket/ipp/lpd): [Default: lpd] ')
+    plist_opts['protocol'] = str(raw_input('Protocol (socket/ipp/lpd): [Default: lpd] ')).lower()
     plist_opts['queue_name'] = raw_input('Queue Name: ')
     plist_opts['display_name'] = raw_input('Display Name: ')
-    plist_opts['name'] = plist_opts['display_name']
+    if plist_opts['queue_name']:
+        plist_opts['name'] = plist_opts['queue_name']
+    else:
+        plist_opts['name'] = str(plist_opts['display_name']).strip().replace(' ','')
+    print "Package name for Munki manifests is: ", plist_opts['name']
     plist_opts['location'] = raw_input('Location (optional): ')
-    plist_opts['ppd'] = raw_input('PPD (driver) path: ')
+    if yesNo("Use Generic PS Driver?"):
+        plist_opts['ppd'] = "/System/Library/Frameworks/ApplicationServices.framework/Versions/A/Frameworks/PrintCore.framework/Versions/A/Resources/Generic.ppd"
+    else:
+        plist_opts['ppd'] = raw_input('PPD (driver) path: ')
+    if yesNo("Duplex printing?"):
+        plist_opts['options'] = []
+        plist_opts['options'].append('sides=two-sided-long-edge')
 
     return plist_opts
 
 def main():
-    #usage = "%prog [options]"
-    #o = argparse.ArgumentParser(usage=usage)
-    o = argparse.ArgumentParser(description = '')
+    description = "A python script to create nopkg-style files for installing printers onto client systems using Munki (https://github.com/munki/munki).  Printers can be imported from a pre-existing XML plist file or can be created interactively."
+    epilog = "To import printers into Munki, copy the output file to the pkgsinfo/ directory of your Munki repo and then re-run makecatalogs"
+
+    o = argparse.ArgumentParser(description = description,epilog = epilog)
 
     o.add_argument("-p","--plist",
-                 help=("Path to an XML plist file containing key/value pairs "
-                       "for version, display_name, queue_name, ppd, location, "
-                       "and other options. See example-hp4100.plist for an "
-                       "example."))
+                 help = "Path to an XML plist file containing key/value pairs for version, display_name, queue_name, ppd, location, and other options. See example-printer.plist for an example.")
 
     o.add_argument('-i','--interactive',help = "Create pkginfo file in interactive mode rather than with a .plist file",action = "store_true")
+
+    o.add_argument('-o','--outfile',help = "Write pkginfo to plist file rather than STDOUT")
+
+    o.add_argument('-c','--catalog',help = "Set Munki catalog (default without -c is \"testing\")")
 
     args = o.parse_args()
     plist_opts = {}
@@ -100,7 +119,10 @@ def main():
             options = None
 
         try:
-            catalog = plist_opts['default_catalog']
+            if args.catalog:
+                catalog = args.catalog
+            else:
+                catalog = plist_opts['default_catalog']
         except:
             catalog = 'testing'
 
@@ -378,7 +400,10 @@ def main():
         uninstallable = True
         pkginfo['uninstallable'] = uninstallable
 
-        print plistlib.writePlistToString(pkginfo)
+        if args.outfile:
+            plistlib.writePlist(pkginfo,args.outfile)
+        else:
+            print plistlib.writePlistToString(pkginfo)
 
         # print and clean up
 if __name__ == '__main__':
