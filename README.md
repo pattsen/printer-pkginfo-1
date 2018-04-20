@@ -9,7 +9,8 @@ input. In interactive mode, users are guided through filling in the basic
 information for the printer, but more advanced options used by `lpadmin`
 are not available (with the exception of duplexing).
 
-```usage: printer-pkginfo [-h] [-p PLIST] [-i] [-o OUTFILE] [-c CATALOG]
+```
+usage: printer-pkginfo [-h] [-p PLIST] [-i] [-o OUTFILE] [-c CATALOG]
 
 A python script to create nopkg-style files for installing printers onto
 client systems using Munki (https://github.com/munki/munki). Printers can be
