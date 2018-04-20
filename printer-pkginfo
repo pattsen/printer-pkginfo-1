@@ -85,7 +85,7 @@ def interactiveInput():
     return plist_opts
 
 def main():
-    description = "A python script to create nopkg-style files for installing printers onto client systems using Munki (https://github.com/munki/munki).  Printers can be imported from a pre-existing XML plist file or can be created interactively."
+    description = "A python script to create nopkg-style files for installing printers onto client systems using Munki (https://github.com/munki/munki).  Printers can be imported from a pre-existing XML plist file or can be created interactively.  Unless a file path is specified with -o, the pkg file will be written to STDOUT."
     epilog = "To import printers into Munki, copy the output file to the pkgsinfo/ directory of your Munki repo and then re-run makecatalogs"
 
     o = argparse.ArgumentParser(description = description,epilog = epilog)

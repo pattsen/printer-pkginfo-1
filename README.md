@@ -15,6 +15,8 @@ usage: printer-pkginfo [-h] [-p PLIST] [-i] [-o OUTFILE] [-c CATALOG]
 A python script to create nopkg-style files for installing printers onto
 client systems using Munki (https://github.com/munki/munki). Printers can be
 imported from a pre-existing XML plist file or can be created interactively.
+Unless a file path is specified with -o, the pkg file will be written to
+STDOUT.
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -33,6 +35,10 @@ optional arguments:
 To import printers into Munki, copy the output file to the pkgsinfo/ directory
 of your Munki repo and then re-run makecatalogs
 ```
+
+By default, pkginfo files are written to the STDOUT for easy inspection. This
+behavior can be changed by running the command with the `-o` option or using
+output redirection.
 
 ### Non-Interactive Usage
 
