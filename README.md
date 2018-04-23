@@ -31,6 +31,10 @@ optional arguments:
                         Write pkginfo to plist file rather than STDOUT
   -c CATALOG, --catalog CATALOG
                         Set Munki catalog (default without -c is "testing")
+  -v VERSION, --version VERSION
+                        Set package version if creating an updated pkginfo
+                        file for an existing printer (default without -v is
+                        0.1)
 
 To import printers into Munki, copy the output file to the pkgsinfo/ directory
 of your Munki repo and then re-run makecatalogs
