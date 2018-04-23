@@ -99,6 +99,8 @@ def main():
 
     o.add_argument('-c','--catalog',help = "Set Munki catalog (default without -c is \"testing\")")
 
+    o.add_argument('-v','--version',help = "Set package version if creating an updated pkginfo file for an existing printer (default without -v is 0.1)",type = float)
+
     args = o.parse_args()
     plist_opts = {}
 
@@ -109,7 +111,10 @@ def main():
 
     if plist_opts:
         try:
-            version = plist_opts['version']
+            if args['version']:
+                version = args['version']
+            else:
+                version = plist_opts['version']
         except:
             version = '0.1'
 
