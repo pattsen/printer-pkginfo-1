@@ -66,7 +66,9 @@ def interactiveInput():
     plist_opts = {}
     plist_opts['address'] = raw_input('Printer Address: ')
     plist_opts['protocol'] = str(raw_input('Protocol (socket/ipp/lpd): [Default: lpd] ')).lower()
-    plist_opts['queue_name'] = raw_input('Queue Name: ')
+    if not plist_opts['protocol']:
+        plist_opts['protocol'] = 'lpd'
+    plist_opts['queue_name'] = raw_input('Server Queue Name: ')
     plist_opts['display_name'] = raw_input('Display Name: ')
     if plist_opts['queue_name']:
         plist_opts['name'] = plist_opts['queue_name']
@@ -97,12 +99,17 @@ def main():
 
     o.add_argument('-o','--outfile',help = "Write pkginfo to plist file rather than STDOUT")
 
-    o.add_argument('-c','--catalog',help = "Set Munki catalog (default without -c is \"testing\")")
+    o.add_argument('-c','--catalog',default = 'testing',help = "Set Munki catalog (default without -c is \"testing\")")
 
-    o.add_argument('-v','--version',help = "Set package version if creating an updated pkginfo file for an existing printer (default without -v is 0.1)",type = float)
+    o.add_argument('-v','--version',default = 0.1,help = "Set package version if creating an updated pkginfo file for an existing printer (default without -v is 0.1)",type = float)
+
+    o.add_argument('--prefix',help = "With -i, set prefix for printer name as it appears in Munki manifests")
 
     args = o.parse_args()
     plist_opts = {}
+
+    if args.interactive and args.outfile is None:
+        o.error("Interactive mode (-i) requires output file to be specified with -o")
 
     if args.plist:
         plist_opts = plistInput(args.plist)
@@ -153,7 +160,10 @@ def main():
                 formatted_options = formatted_options + built
 
         queue_name = plist_opts['queue_name']
-        name = plist_opts['name']
+        if args.prefix:
+            name = args.prefix + plist_opts['name']
+        else:
+            name = plist_opts['name']
         if len(queue_name) > 24:
             fail("Queue name is too long")
 
@@ -163,7 +173,11 @@ def main():
             location = plist_opts['location']
         else:
             location = ""
-        address = plist_opts['address']
+
+        if plist_opts['queue_name']:
+            address = plist_opts['address'] + "/" + plist_opts['queue_name']
+        else:
+            address = plist_opts['address']
 
         # build the install check script
 
