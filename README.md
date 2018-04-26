@@ -35,6 +35,9 @@ optional arguments:
                         Set package version if creating an updated pkginfo
                         file for an existing printer (default without -v is
                         0.1)
+  --prefix PREFIX       With -i, set prefix for printer name as it appears in
+                        Munki manifests
+
 
 To import printers into Munki, copy the output file to the pkgsinfo/ directory
 of your Munki repo and then re-run makecatalogs
