@@ -1,4 +1,4 @@
-Changes to this version originals:
+Changes to this version compared to the originals:
 ==================================
 This updated version is made to support Python 3 and the new changes Apple for future versions from macOS 10.16 -->!
 
@@ -24,6 +24,9 @@ Note: This is a work in progress and do not work with the following:
 #!/usr/bin/python3 (Homebrew python)
 #!/usr/local/munki/python
 
+Original versions can be found here:
+https://github.com/grahamgilbert/printer-pkginfo
+https://github.com/HBBisenieks/printer-pkginfo
 
 printer-pkginfo
 ===============
