@@ -1,4 +1,3 @@
-==================================
 This is untested for installation since i dont have access yet for an IPP printer setup at work.
 ==================================
 
