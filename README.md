@@ -4,8 +4,9 @@ This is untested since i dont have access yet for an IPP printer setup at work.
 
 Changes to this version compared to the originals:
 ==================================
-This updated version is made to support Python 3 and the new changes Apple for future versions from macOS 10.16 -->!
 
+This updated version is made to support Python 3 and the new changes Apple for future versions from macOS 10.16 -->!
+==================================
 Changes:
 File: printer-pkginfo-Py-v3.py is the new updated version and the following is done:
 - Removed support for socket/ipp/lpd.
