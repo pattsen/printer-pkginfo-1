@@ -1,3 +1,30 @@
+Changes to this version originals:
+==================================
+This updated version is made to support Python 3 and the new changes Apple for future versions from macOS 10.16 -->!
+
+Changes:
+File: printer-pkginfo-Py-v3.py is the new updated version and the following is done:
+- Removed support for socket/ipp/lpd.
+- Removed support for -p for adding for drivers. 
+- Added: IPP as default protocol to future proof it since the others are deprecated.
+- Added: -m and "everywhere" as the default printer to install and use for IPP
+- Replaced -p with -m since drivers are deprecated in future versions of macOS
+- Updated code with: 2to3 to update code to python3
+- example-IPP-printer.plist is updated to support the new printer-pkginfo-Py-v3.py file for compiling the pkginfo printer file.
+
+
+NOTES
+CUPS printer drivers and backends are deprecated and will no longer  be
+       supported  in  a  future feature release of CUPS.  Printers that do not
+       support   IPP   can   be   supported   using   applications   such   as
+       ippeveprinter(1).
+
+
+Note: This is a work in progress and do not work with the following:
+#!/usr/bin/python3 (Homebrew python)
+#!/usr/local/munki/python
+
+
 printer-pkginfo
 ===============
 
