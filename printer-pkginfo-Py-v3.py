@@ -32,6 +32,7 @@ import tempfile
 import os
 import subprocess
 import sys
+from arguments import ScriptArguments
 
 makepkginfo = '/usr/local/munki/makepkginfo'
 
@@ -45,17 +46,20 @@ def fail(errmsg=''):
     exit(1)
 
 def yesNo(question):
-    reply = str(eval(input(question+' (y/n): '))).lower().strip()
+    question = question+'[default: y]'
+    reply = str(eval("input(question+' (y/n): ')")).lower().strip()
+    if(reply == ""):
+        return True
     if reply[0] == 'y':
         return True
     else:
         return False
 
 def plistInput(plist):
-    plist_opts = {}
-
+    arguments = ScriptArguments()
     try:
-        plist_opts = plistlib.readPlist(plist)
+        with open(plist, 'rb') as f:
+            plist_opts = plistlib.load(f)
     except:
         fail('Could not read %s' % (plist))
 
@@ -68,32 +72,29 @@ def plistInput(plist):
         fail("One or more of the required options are missing from %s" %
              plist)
 
-    return plist_opts
+    arguments = arguments.fromDictionary(plist_opts)
+    return arguments
 
 def interactiveInput():
-    plist_opts = {}
-    plist_opts['address'] = eval(input('Printer Address: '))
-    plist_opts['protocol'] = 'ipp'
-#    plist_opts['protocol'] = str(input('Protocol (socket/ipp/lpd): [Default: ipp] ')).lower()
-#    if not plist_opts['protocol']:
-#        plist_opts['protocol'] = 'lpd'
-    plist_opts['queue_name'] = eval(input('Server Queue Name: '))
-    plist_opts['display_name'] = eval(input('Display Name: '))
-    if plist_opts['queue_name']:
-        plist_opts['name'] = plist_opts['queue_name']
+    arguments = ScriptArguments()
+    address = eval("input('Printer Address: ')")
+    arguments.setAddress(address)
+    queueName = eval("input('Server Queue Name: ')")
+    arguments.setQueueName(queueName)
+    displayName = eval("input('Display Name: ')")
+    arguments.setDisplayName(displayName)
+    if (arguments.getQueueName()):
+        arguments.setName(arguments.getQueueName())
     else:
-        plist_opts['name'] = str(plist_opts['display_name']).strip().replace(' ','')
-    print(("Package name for Munki manifests is: ", plist_opts['name']))
-    plist_opts['location'] = eval(input('Location (optional): '))
-    if yesNo("Use ipp everywhere for printing?"):
-        plist_opts['ipp'] = "everywhere"
-    else:
-        plist_opts['ipp'] = eval(input('ipp (driver) path: '))
+        arguments.setName(str(arguments.getDisplayName()).strip().replace(' ',''))
+    print(("Package name for Munki manifests is: ", arguments.getName()))
+    arguments.setLocation(input('Location (optional): '))
+    if (yesNo("Use ipp everywhere for printing?") == False):
+        arguments.setIpp(eval("input('ipp (driver) path: '))"))
     if yesNo("Duplex printing?"):
-        plist_opts['options'] = []
-        plist_opts['options'].append('sides=two-sided-long-edge')
+       arguments.appendOption('sides=two-sided-long-edge')
 
-    return plist_opts
+    return arguments
 
 def main():
     description = "A python script to create nopkg-style files for installing printers onto client systems using Munki (https://github.com/munki/munki).  Printers can be imported from a pre-existing XML plist file or can be created interactively.  Unless a file path is specified with -o, the pkg file will be written to STDOUT. This script has been updated to ONLY support the new IPP - Internet Printing Protocol since Apple deprecated ppd files and drivers. PPD files and printer drivers are deprecated and will not be supported in a future version of CUPS."
@@ -115,7 +116,6 @@ def main():
     o.add_argument('--prefix',help = "With -i, set prefix for printer name as it appears in Munki manifests")
 
     args = o.parse_args()
-    plist_opts = {}
 
     if args.interactive and args.outfile is None:
         o.error("Interactive mode (-i) requires output file to be specified with -o")
@@ -125,68 +125,55 @@ def main():
     elif args.interactive:
         plist_opts = interactiveInput()
 
-    if plist_opts:
-        try:
-            if args['version']:
-                version = args['version']
-            else:
-                version = plist_opts['version']
-        except:
-            version = '0.1'
-
-        try:
-            options = plist_opts['options']
-        except:
-            options = None
-
-        try:
-            if args.catalog:
-                catalog = args.catalog
-            else:
-                catalog = plist_opts['default_catalog']
-        except:
-            catalog = 'testing'
-
-        try:
-            developer = plist_opts['default_developer']
-        except:
-            developer = 'Printers'
-
-        try:
-            category = plist_opts['default_category']
-        except:
-            category = 'Printers'
-
-        try:
-            protocol = plist_opts['protocol']
-        except:
-            protocol = 'ipp'
-
-        formatted_options = ""
-        if options:
-            for option in options:
-                built = "-o " + option + " "
-                formatted_options = formatted_options + built
-
-        queue_name = plist_opts['queue_name']
-        if args.prefix:
-            name = args.prefix + plist_opts['name']
+    
+    try:
+        if args['version']:
+            version = args['version']
         else:
-            name = plist_opts['name']
-        if len(queue_name) > 24:
-            fail("Queue name is too long")
+            version = plist_opts.getVersion()
+    except:
+        version = '0.1'
 
-        display_name = plist_opts['display_name']
-        ipp = plist_opts['ipp']
-        if plist_opts['location']:
-            location = plist_opts['location']
-        else:
-            location = ""
 
-        if plist_opts['queue_name']:
-            address = plist_opts['address'] + "/" + plist_opts['queue_name']
+    options = plist_opts.getOptions()
+
+    try:
+        if args.catalog:
+            catalog = args.catalog
         else:
-            address = plist_opts['address']
+            catalog = plist_opts.getDefaultCatalog()
+    except:
+        catalog = 'testing'
+
+    developer = plist_opts.getDefaultDeveloper()
+    
+    category = plist_opts.getDefaultCategory()
+   
+    protocol = plist_opts.getProtocol()
+
+    formatted_options = ""
+    if options:
+        for option in options:
+            built = "-o " + option + " "
+            formatted_options = formatted_options + built
+
+    queue_name = plist_opts.getQueueName()
+    name = plist_opts.getName()
+    if args.prefix:
+        name = args.prefix + name
+        
+    if len(queue_name) > 24:
+        fail("Queue name is too long")
+
+    display_name = plist_opts.getDisplayName()
+    ipp = plist_opts['ipp']
+    
+    location = plist_opts.getLocation()
+
+    if queue_name:
+        address = plist_opts.getAddress() + "/" + queue_name
+    else:
+        address = plist_opts.getAddress()
 
         # build the install check script
 
@@ -436,3 +423,4 @@ def main():
         # print and clean up
 if __name__ == '__main__':
     main()
+
