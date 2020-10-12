@@ -124,6 +124,8 @@ def main():
         plist_opts = plistInput(args.plist)
     elif args.interactive:
         plist_opts = interactiveInput()
+    else:
+        plist_opts = interactiveInput()
 
     
     try:
@@ -166,7 +168,7 @@ def main():
         fail("Queue name is too long")
 
     display_name = plist_opts.getDisplayName()
-    ipp = plist_opts['ipp']
+    ipp = plist_opts.getIpp()
     
     location = plist_opts.getLocation()
 
