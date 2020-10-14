@@ -90,7 +90,7 @@ def interactiveInput():
     print(("Package name for Munki manifests is: ", arguments.getName()))
     arguments.setLocation(input('Location (optional): '))
     if (yesNo("Use ipp everywhere for printing?") == False):
-        arguments.setIpp(eval("input('ipp (driver) path: '))"))
+        arguments.setIpp(eval("input('ipp (driver) path: ')"))
     if yesNo("Duplex printing?"):
        arguments.appendOption('sides=two-sided-long-edge')
 
